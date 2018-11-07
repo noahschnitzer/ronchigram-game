@@ -13,7 +13,7 @@ function [aberrations] = aberration_generator(num_gen)
         aberrations(abit).angle = 180*(2*rand(1,length(aberrations(abit).n)))./aberrations(abit).n; %zeros(1,length(aberrations(abit).n));%
         aberrations(abit).unit = [ang,  nm,  nm,  um,  um,  um,  mm,  mm,  mm,  mm,mm,mm,mm];
         %                    x , 157,95.5,10.4,10.4,5.22, 0.1,  xx,  xx,  10,10,10,10
-        lims = [50, 157,95.5, 10.4, 10.4,5.22,0.1,0.5,0.5,10,10,10,10];
+        lims = [50, 157,95.5, 10.4, 10.4,5.22,0.1,0.5,0.5,10,10,10,10]; % Kirkland Ultramicroscopy 2011
         slider_pos = slider_settings(ceil(rand()*10));
         scaling = .5*rand();
         for it = 1:length(lims)

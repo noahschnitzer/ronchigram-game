@@ -40,69 +40,44 @@ function [im, chi0, min_p4, probe, S] = shifted_ronchigram(aberrations, shifts, 
     al_pp = atan2(alyy,alxx);
     % Objective Aperture
     obj_ap_r  = 60 * 10^-3; %rad
-
     if nargin > 2
         obj_ap_r = aperture_size.*10^-3;
     end
-    obj_ap    = al_rr<= obj_ap_r;
-    
-    % ronchigram calculation in loop -> reduced memory cost (e.g. no sample
-    % storage)
-    % looping for each ronchigram for each defocus channel
-
+    obj_ap    = al_rr<= obj_ap_r;    
     % creating amorphous specimen by generating random noise kernel,
     % and downsampling
     noise_kernel_size = 32;
     resize_factor = numPx./noise_kernel_size;
     noise_fn = randn(noise_kernel_size,noise_kernel_size);
     noise_fun = imresize(noise_fn,resize_factor,'nearest');
-    % Transmission Operator from Random pi/4 shift specimen
     charge_e = 1.602e-19;
     mass_e = 9.11e-31;
     c = 3e8;
-    
-    interaction_param = 2*pi./(lambda.*kev./charge_e.*1000).*(mass_e*c.^2+kev.*1000)./(2*mass_e*c.^2+kev.*1000);
-           % Transmission Operator from Random pi/4 shift specimen +
-           % interaction parameter
-           interaction_param_0 = 1.7042e-12;
+    % Transmission Operator from Random pi/4 shift specimen +
+    % interaction parameter
 
-           trans = exp(-1i*pi/4*noise_fun*interaction_param/interaction_param_0);
+    interaction_param = 2*pi./(lambda.*kev./charge_e.*1000).*(mass_e*c.^2+kev.*1000)./(2*mass_e*c.^2+kev.*1000);
+    interaction_param_0 = 1.7042e-12; %300 kV normalization factor
+    trans = exp(-1i*pi/4*noise_fun*interaction_param/interaction_param_0);
     
 
     % Calculate Probe
-    %defocus
     chi = zeros(size(al_rr));
-    %all other aberrations
-%     subplot(235);
     for kt = 1: numAb
         Cnm = aberrations.mag(1, kt) * aberrations.unit(kt) ;
         m = aberrations.m(kt);
         n = aberrations.n(kt);
         phinm = aberrations.angle(1,kt) * deg;
         chi = chi +Cnm*cos(m*(al_pp-phinm)).*(al_rr.^(n+1))/(n+1);
-        %[Zr, R] = radialavg(chi,128, 0, 0);
-%         plot(Zr(2:end));
-%         hold on;
-
     end
     chi0 = 2*pi/lambda * chi; %aberration function
-%     subplot(236);
-%     [Zr, R] = radialavg(chi0,128, 0, 0);
-%     plot(Zr(2:end));
     max_p4 = 0;
     max_center = 0;
     for lim_center = -pi/4:pi/20:pi/4
         
         lb = lim_center - pi/4;
         ub = lim_center + pi/4;
-        %figure;
-        %subplot(211);
         chi0_p4 = (chi0 < lb) | (chi0 > ub);
-        %imagesc(chi0_p4);
-        %title(num2str(lim_center));
-        %chi0_p4 = abs(chi0) > pi/4;  % Mask for >pi/4 shift
-        %subplot(212);
-        %imagesc(chi0_p4);
         al_rr_p4 = chi0_p4 .* al_rr;
         al_rr_p4( al_rr_p4 == 0 ) = inf;
         min_p4 = min(al_rr_p4(:))*1000;
@@ -141,9 +116,4 @@ function [im, chi0, min_p4, probe, S] = shifted_ronchigram(aberrations, shifts, 
     im = ronch;
     
     probe = abs(ifftshift(psi_p)).^2;
-    %probe = probe - min(probe(:));
-    %probe = probe ./ max(probe(:));
-        
-    
-
 end

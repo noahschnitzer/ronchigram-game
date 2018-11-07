@@ -1,4 +1,3 @@
-
 function gui_driver
 rng('shuffle')
 vert_dim = 550;
@@ -42,10 +41,9 @@ ha = axes('Units','pixels','Position',[25,25,500,500]);
 
 %input
 htag = uicontrol('Style','edit', 'Position', [530, 30, 150, 30]);
+%%% For NN
+%%% load net_12.mat net
 
-% load net_12.mat net
-
-% Initialize the UI.
 % Change units to normalized so components resize automatically.
 f.Units = 'normalized';
 ha.Units = 'normalized';
@@ -69,102 +67,92 @@ f.Name = 'Ronchigram Game';
 % Move the window to the center of the screen.
 movegui(f,'center')
 
-%ronchi_game_drive();
 imshow(zeros(256,256));
 
 it = 0;
 
 % Make the window visible.
 f.Visible = 'on';
-%rows:trials; cols: truth, user guess, network prediction
 results = [];
 aberrations = aberration_generator(1);
 user_sel = [];
-imdim = 256;
-simdim = 90; %90/75
-ap_size = 75; %diameter!
+imdim = 256; %full width
+simdim = 90; %full width
+ap_size = 75; %diameter
 shifts = [];
 min_p4 = 0;
 
   function nextbutton_Callback(source,eventdata) 
       
-              htextStrehl.String = '';
-        htextGuess.String = '';
-        htextindivP4.String = '';
-        htextP4.String = '';
-        htextStatus.String = '';
-
-  % Display surf plot of the currently selected data.
+    htextStrehl.String = '';
+    htextGuess.String = '';
+    htextindivP4.String = '';
+    htextP4.String = '';
+    htextStatus.String = '';
+    % Prompt user to draw circle
     if strcmp(hnext.String,'Next Ronchigram') | strcmp(hnext.String,'Start Playing')
-        %hnext.String = 'Next Ronchigram';
         it = it + 1;
         shifts = round(40.*(rand(1,2)-.5));
         new_ab = aberration_generator(1);
         aberrations(it) = new_ab(1);
-
-        %figure;
         [im, ~, min_p4,~, ~] = shifted_ronchigram(aberrations(end),shifts,ap_size,imdim,simdim);
-        %[im, chi0_p4, min_p4, probe] = shifted_ronchigram(aberrations(end),shifts);
         imagesc(im);
         colormap gray;
         axis equal off;
         title(['Trial ' num2str(it)]);
-            hnext.Visible = false;
-
+        hnext.Visible = false;
         user_sel = drawcircle('FaceAlpha',0,'Color','red');
+        %thread halts until circle drawn
         hnext.Visible = true;
-        hnext.String = 'Finished';
+        hnext.String = 'Done';
+        % now wait for user to press hnext
     
     else 
-    guessed_radius = user_sel.Radius.*simdim/imdim;
-    pred = 0;
-    strehl_ap = 0;
-%     if hcheckboxindivP4.Value
-%         pred = double(net.predict(im.*256));
-%     end
-    results(end+1,:) = [strehl_ap, min_p4, guessed_radius, pred];
-
-    if hcheckboxfeedback.Value
-        htextStatus.String = 'Radii:';
-
-        cutoff1 = .9;
-        [strehl_ap, ~] = strehl_calculator(aberrations(end), imdim, simdim, cutoff1,0);
-        [indiv_p4_ap] = indiv_p4_calculator(aberrations(end), imdim, simdim);
-        %cutoff2 = .9;
-        %[ap2, ~] = strehl_calculator(aberrations(end), imdim, simdim, cutoff2,0);
-        %[thresh, Ss] = strehl_calculator(aberrations,128,90,.9,0);
-        results(end,:) = [strehl_ap, min_p4, guessed_radius, indiv_p4_ap];
-
+        % User has drawn circle, pressed hnext to indicate they are finished
+        guessed_radius = user_sel.Radius.*simdim/imdim; 
+        pred = 0;
+        strehl_ap = 0;
+        %%% for NN
+        %%%     if hcheckboxindivP4.Value
+        %%%         pred = double(net.predict(im.*256));
+        %%%     end
         
-        htextStrehl.String = [num2str(cutoff1) ' Strehl: ' num2str(strehl_ap) 'mrad'];
-        htextGuess.String = ['Guess: ' num2str(round(guessed_radius,1)) 'mrad'];
-        viscircles([imdim/2-shifts(1) imdim/2-shifts(2)], strehl_ap.*imdim/simdim,'Color','blue');
-        vis_aps = [guessed_radius,strehl_ap];
-        if hcheckboxP4.Value ~= 0
-            htextP4.String = ['Summed Pi/4: ' num2str(round(min_p4,1)) 'mrad'];
-            viscircles([imdim/2-shifts(1) imdim/2-shifts(2)], min_p4.*imdim/simdim,'Color','cyan');
-            vis_aps(end+1) = min_p4;
-        else
-            htextP4.String = '';
-        end
-        
-        if hcheckboxindivP4.Value ~= 0
-            htextindivP4.String = ['Individual pi/4: ' num2str(indiv_p4_ap) 'mrad'];
-            viscircles([imdim/2-shifts(1) imdim/2-shifts(2)], indiv_p4_ap.*imdim/simdim,'Color','green');
-            vis_aps(end+1) = indiv_p4_ap;
-        else
-            htextindivP4.String = '';
-        end
-        if hcheckboxPlotProbe.Value 
-            probe_vis(figure,aberrations(end), vis_aps,simdim, imdim);
-        end
-        hnext.String = 'Next Ronchigram';
-    else
-        hnext.String = 'Next Ronchigram';
-        nextbutton_Callback;
+        %uncalculated values -> 0 unless user chooses to calculate feedback now
+        results(end+1,:) = [strehl_ap, 0, guessed_radius, pred];
 
-    end
-    %hnext.Visible = true;
+        if hcheckboxfeedback.Value
+            htextStatus.String = 'Radii:';
+            cutoff1 = .9;
+            [strehl_ap, ~] = strehl_calculator(aberrations(end), imdim, simdim, cutoff1,0);
+            [indiv_p4_ap] = indiv_p4_calculator(aberrations(end), imdim, simdim);
+            results(end,:) = [strehl_ap, min_p4, guessed_radius, indiv_p4_ap];
+            htextStrehl.String = [num2str(cutoff1) ' Strehl: ' num2str(strehl_ap) 'mrad'];
+            htextGuess.String = ['Guess: ' num2str(round(guessed_radius,1)) 'mrad'];
+            viscircles([imdim/2-shifts(1) imdim/2-shifts(2)], strehl_ap.*imdim/simdim,'Color','blue');
+            vis_aps = [guessed_radius,strehl_ap];
+            if hcheckboxP4.Value ~= 0
+                htextP4.String = ['Summed Pi/4: ' num2str(round(min_p4,1)) 'mrad'];
+                viscircles([imdim/2-shifts(1) imdim/2-shifts(2)], min_p4.*imdim/simdim,'Color','cyan');
+                vis_aps(end+1) = min_p4;
+            else
+                htextP4.String = '';
+            end
+
+            if hcheckboxindivP4.Value ~= 0
+                htextindivP4.String = ['Individual pi/4: ' num2str(indiv_p4_ap) 'mrad'];
+                viscircles([imdim/2-shifts(1) imdim/2-shifts(2)], indiv_p4_ap.*imdim/simdim,'Color','green');
+                vis_aps(end+1) = indiv_p4_ap;
+            else
+                htextindivP4.String = '';
+            end
+            if hcheckboxPlotProbe.Value 
+                probe_vis(figure,aberrations(end), vis_aps,simdim, imdim);
+            end
+            hnext.String = 'Next Ronchigram';
+        else %feedback
+            hnext.String = 'Next Ronchigram';
+            nextbutton_Callback;
+        end
     end
   end
 
@@ -178,7 +166,6 @@ min_p4 = 0;
 
         if hcheckboxfeedback.Value
             htextStatus.String = ['RMSE: ' num2str(RMSE) ' mrad'];
-            results
             plot(results(:,1),'o','MarkerSize',15,'MarkerEdgeColor','blue');
             hold on;
             plot(results(:,2),'x','MarkerSize',15,'MarkerEdgeColor','cyan');
