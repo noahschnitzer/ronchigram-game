@@ -5,6 +5,12 @@
 %%% revised by noah schnitzer
 %%%
 %%% Parameters:
+%%%     aberrations
+%%%     shifts           should be integer values x,y
+%%%     aperture_size    semi-angle*** -ap_size:+ap_size
+%%%     imdim            full-width/height
+%%%     simdim           semi-angle *** -ap_size:+ap_size
+%%% Outputs:
 
 function [im, chi0, min_p4, probe, S] = shifted_ronchigram(aberrations, shifts, aperture_size, imdim, simdim)
 
@@ -46,10 +52,10 @@ function [im, chi0, min_p4, probe, S] = shifted_ronchigram(aberrations, shifts, 
     obj_ap    = al_rr<= obj_ap_r;    
     % creating amorphous specimen by generating random noise kernel,
     % and downsampling
-    noise_kernel_size = 32;
+    noise_kernel_size = 40;%32; %200 for 512
     resize_factor = numPx./noise_kernel_size;
     noise_fn = randn(noise_kernel_size,noise_kernel_size);
-    noise_fun = imresize(noise_fn,resize_factor,'nearest');
+    noise_fun = imresize(noise_fn,resize_factor);
     charge_e = 1.602e-19;
     mass_e = 9.11e-31;
     c = 3e8;

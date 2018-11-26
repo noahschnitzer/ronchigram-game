@@ -18,7 +18,7 @@ hcheckboxfeedback = uicontrol('Style','checkbox','String', 'Show Feedback', ...
             'Value',0,'Position',[530 450 200 25],'FontSize',15);
 hcheckboxindivP4 = uicontrol('Style','checkbox','String', 'Show individual pi/4', ...
             'Value',0,'Position',[530 425 200 25],'FontSize',15);
-hcheckboxP4 = uicontrol('Style','checkbox','String', 'Show sum pi/4',...
+hcheckboxStrehl = uicontrol('Style','checkbox','String', 'Show Strehl',...
             'Value',0,'Position',[530 400 150 25],'FontSize',15);
 hcheckboxPlotProbe = uicontrol('Style','checkbox','String', 'Plot Probe',...
             'Value',0,'Position',[530 375 150 25],'FontSize',15);
@@ -51,7 +51,7 @@ hnext.Units = 'normalized';
 hfinish.Units = 'normalized';
 hcheckboxfeedback.Units = 'normalized';
 hcheckboxindivP4.Units = 'normalized';
-hcheckboxP4.Units = 'normalized';
+hcheckboxStrehl.Units = 'normalized';
 hcheckboxPlotProbe.Units = 'normalized';
 htextStrehl.Units = 'normalized';
 htextP4.Units = 'normalized';
@@ -76,9 +76,9 @@ f.Visible = 'on';
 results = [];
 aberrations = aberration_generator(1);
 user_sel = [];
-imdim = 256; %full width
-simdim = 90; %full width
-ap_size = 75; %diameter
+imdim = 256;
+simdim = 110; 
+ap_size = 90;
 shifts = [];
 min_p4 = 0;
 
@@ -96,6 +96,8 @@ min_p4 = 0;
         new_ab = aberration_generator(1);
         aberrations(it) = new_ab(1);
         [im, ~, min_p4,~, ~] = shifted_ronchigram(aberrations(end),shifts,ap_size,imdim,simdim);
+        %aberrations(end).mag.*aberrations(end).unit
+        %aberrations(end).angle
         imagesc(im);
         colormap gray;
         axis equal off;
@@ -122,20 +124,20 @@ min_p4 = 0;
 
         if hcheckboxfeedback.Value
             htextStatus.String = 'Radii:';
-            cutoff1 = .9;
+            cutoff1 = .9999;
             [strehl_ap, ~] = strehl_calculator(aberrations(end), imdim, simdim, cutoff1,0);
             [indiv_p4_ap] = indiv_p4_calculator(aberrations(end), imdim, simdim);
-            results(end,:) = [strehl_ap, min_p4, guessed_radius, indiv_p4_ap];
-            htextStrehl.String = [num2str(cutoff1) ' Strehl: ' num2str(strehl_ap) 'mrad'];
+            results(end,:) = [min_p4,strehl_ap, guessed_radius, indiv_p4_ap];
+            htextP4.String = [ ' Pi/4: ' num2str(min_p4) 'mrad'];
             htextGuess.String = ['Guess: ' num2str(round(guessed_radius,1)) 'mrad'];
-            viscircles([imdim/2-shifts(1) imdim/2-shifts(2)], strehl_ap.*imdim/simdim,'Color','blue');
-            vis_aps = [guessed_radius,strehl_ap];
-            if hcheckboxP4.Value ~= 0
-                htextP4.String = ['Summed Pi/4: ' num2str(round(min_p4,1)) 'mrad'];
-                viscircles([imdim/2-shifts(1) imdim/2-shifts(2)], min_p4.*imdim/simdim,'Color','cyan');
-                vis_aps(end+1) = min_p4;
+            viscircles([imdim/2-shifts(1) imdim/2-shifts(2)], min_p4.*imdim/simdim,'Color','cyan');
+            vis_aps = [guessed_radius,min_p4];
+            if hcheckboxStrehl.Value ~= 0
+                htextStrehl.String = [num2str(cutoff1) 'Strehl: ' num2str(round(strehl_ap,1)) 'mrad'];
+                viscircles([imdim/2-shifts(1) imdim/2-shifts(2)], strehl_ap.*imdim/simdim,'Color','blue');
+                vis_aps(end+1) = strehl_ap;
             else
-                htextP4.String = '';
+                htextStrehl.String = '';
             end
 
             if hcheckboxindivP4.Value ~= 0
@@ -172,7 +174,7 @@ min_p4 = 0;
             plot(results(:,3),'^','MarkerSize',15,'MarkerEdgeColor','red');
             plot(results(:,4),'*','MarkerSize',15,'MarkerEdgeColor','green');
 
-            legend('Strehl','Sum Pi/4','Guess','Individual Pi/4');
+            legend('Sum Pi/4','Strehl','Guess','Individual Pi/4');
             set(gca,'FontSize',15);
             xlabel('Trial');
             ylabel('Aperture Size');
@@ -182,7 +184,7 @@ min_p4 = 0;
         hfinish.Visible = false;
         hcheckboxfeedback.Visible = false;
         hcheckboxindivP4.Visible = false;
-        hcheckboxP4.Visible = false;
+        hcheckboxStrehl.Visible = false;
         hcheckboxPlotProbe.Visible = false;
         tag = htag.String;
         

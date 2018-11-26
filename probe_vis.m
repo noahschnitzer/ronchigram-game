@@ -1,7 +1,7 @@
 function [] = probe_vis(fig,aberration, apertures,simdim, imdim )
     figure(fig);
     hold on;
-    colors = {'red', 'blue', 'cyan','green','yellow'};
+    colors = {'red', 'cyan', 'blue','green','yellow'};
     leg = {};
     for ap_num = 1:length(apertures)
         aperture = apertures(ap_num);
