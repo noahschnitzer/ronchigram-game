@@ -124,7 +124,7 @@ min_p4 = 0;
 
         if hcheckboxfeedback.Value
             htextStatus.String = 'Radii:';
-            cutoff1 = .9999;
+            cutoff1 = .9;
             [strehl_ap, ~] = strehl_calculator(aberrations(end), imdim, simdim, cutoff1,0);
             [indiv_p4_ap] = indiv_p4_calculator(aberrations(end), imdim, simdim);
             results(end,:) = [min_p4,strehl_ap, guessed_radius, indiv_p4_ap];
